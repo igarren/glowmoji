@@ -1,6 +1,6 @@
 {
   "name": "glowmoji",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Glowing emoji-style avatar generator — deterministic, SVG-based, zero dependencies",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
