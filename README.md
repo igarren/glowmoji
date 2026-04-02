@@ -34,6 +34,9 @@ import { mount } from 'glowmoji';
 // sets innerHTML, auto-blinks, click-to-blink — all wired up
 const stop = mount(document.getElementById('avatar'), { name: 'Alice' });
 
+// choose a click animation
+const stop = mount(el, { name: 'Bob' }, { onClickAnimation: 'hurt' });
+
 // or manually if you need more control
 import { glowmoji, autoBlink, blink } from 'glowmoji';
 const { svg } = glowmoji({ name: 'Alice' });
@@ -49,6 +52,9 @@ import { Glowmoji } from 'glowmoji/react';
 
 <Glowmoji name="Alice" />
 <Glowmoji name="Alice" size={48} shape="circle" color="#a78bfa" />
+
+// with click animation
+<Glowmoji name="Alice" onClickAnimation="kiss" />
 
 // disable auto-blink
 <Glowmoji name="Alice" blink={false} />
@@ -69,6 +75,35 @@ Requires React 17+. Works with whatever version your project already has.
 | `transparent` | `boolean` | `false` | skip the dark bg — use on light pages |
 
 the `color` prop replaces the auto palette. glow is derived automatically.
+
+---
+
+## click animations
+
+`mount()` accepts a third argument `{ onClickAnimation }` to control what happens when you click the avatar. the React component takes it as a prop.
+
+| animation | what it does |
+|---|---|
+| `blink` | default — a quick blink |
+| `hurt` | X eyes, round open mouth, slight squish — the classic "ow" face |
+| `kiss` | one eye winks, mouth puckers into a ε shape, a heart floats up |
+
+```ts
+// vanilla
+mount(el, { name: 'Alice' }, { onClickAnimation: 'hurt' });
+
+// react
+<Glowmoji name="Alice" onClickAnimation="kiss" />
+```
+
+you can also call the animations directly:
+
+```ts
+import { blink, hurt, kiss } from 'glowmoji';
+
+hurt(container);  // trigger the hurt animation
+kiss(container);  // trigger the kiss animation
+```
 
 ---
 
@@ -93,6 +128,7 @@ const stop = autoBlink(el);
 
 ```ts
 type Shape = 'square' | 'rounded' | 'circle';
+type ClickAnimation = 'blink' | 'hurt' | 'kiss';
 
 interface GlowmojiOptions {
   name: string;

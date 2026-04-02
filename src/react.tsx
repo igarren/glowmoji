@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { glowmoji, autoBlink, blink as blinkFn, type GlowmojiOptions } from './index';
+import { glowmoji, autoBlink, blink as blinkFn, hurt as hurtFn, kiss as kissFn, type GlowmojiOptions, type ClickAnimation } from './index';
 
 export type GlowmojiProps = Omit<GlowmojiOptions, 'name'> & {
   name: string;
@@ -7,22 +7,28 @@ export type GlowmojiProps = Omit<GlowmojiOptions, 'name'> & {
   asImg?: boolean;
   /** Auto-blink on a random interval. Default: true */
   blink?: boolean;
+  /** Which animation to play on click. Default: 'blink' */
+  onClickAnimation?: ClickAnimation;
   className?: string;
   style?: React.CSSProperties;
 };
 
-export function Glowmoji({ name, size = 64, shape, color, transparent, asImg = false, blink = true, className, style }: GlowmojiProps) {
+export function Glowmoji({ name, size = 64, shape, color, transparent, asImg = false, blink = true, onClickAnimation = 'blink', className, style }: GlowmojiProps) {
   const ref = React.useRef<HTMLSpanElement>(null);
   const { svg, dataUri } = glowmoji({ name, size, shape, color, transparent });
 
   React.useEffect(() => {
     if (!blink || !ref.current) return;
     const el = ref.current;
-    const onClick = () => blinkFn(el);
+    const onClick = () => {
+      if (onClickAnimation === 'hurt') hurtFn(el);
+      else if (onClickAnimation === 'kiss') kissFn(el);
+      else blinkFn(el);
+    };
     el.addEventListener('click', onClick);
     const stop = autoBlink(el);
     return () => { stop(); el.removeEventListener('click', onClick); };
-  }, [blink, name, size, shape, color]);
+  }, [blink, onClickAnimation, name, size, shape, color]);
 
   if (asImg) {
     return <img src={dataUri} alt={name} width={size} height={size} className={className} style={style} />;

@@ -1,6 +1,7 @@
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type Shape = 'square' | 'rounded' | 'circle';
+export type ClickAnimation = 'blink' | 'hurt' | 'kiss';
 
 export interface GlowmojiOptions {
   /** Seed string — username, email, anything deterministic */
@@ -262,6 +263,227 @@ export function autoBlink(container: Element): () => void {
   return () => clearTimeout(timer);
 }
 
+// ─── Hurt animation ─────────────────────────────────────────────────────────
+
+/**
+ * Animate a "hurt" reaction — the face squishes slightly, eyes become X marks,
+ * and the mouth opens into a round "ow" circle.
+ */
+export function hurt(container: Element): void {
+  const svgEl = container.querySelector('svg');
+  if (!svgEl) return;
+
+  const leEl = container.querySelector<SVGEllipseElement>('[id$="_le"]');
+  const reEl = container.querySelector<SVGEllipseElement>('[id$="_re"]');
+  const mouth = svgEl.querySelector<SVGRectElement>('[data-mouth]');
+  if (!leEl || !reEl) return;
+
+  const svg = svgEl;
+  const le = leEl;
+  const re = reEl;
+  const g = svg.querySelector('g')!;
+
+  const dotR = parseFloat(le.getAttribute('rx') ?? '0');
+  const leCx = parseFloat(le.getAttribute('cx') ?? '0');
+  const leCy = parseFloat(le.getAttribute('cy') ?? '0');
+  const reCx = parseFloat(re.getAttribute('cx') ?? '0');
+  const reCy = parseFloat(re.getAttribute('cy') ?? '0');
+  const eyeColor = le.getAttribute('fill') ?? '#000';
+
+  const origMouthW = mouth ? parseFloat(mouth.getAttribute('width') ?? '0') : 0;
+  const origMouthH = mouth ? parseFloat(mouth.getAttribute('height') ?? '0') : 0;
+  const origMouthX = mouth ? parseFloat(mouth.getAttribute('x') ?? '0') : 0;
+  const origMouthY = mouth ? parseFloat(mouth.getAttribute('y') ?? '0') : 0;
+  const origMouthRx = mouth ? parseFloat(mouth.getAttribute('rx') ?? '0') : 0;
+
+  // Create X lines for each eye
+  const ns = 'http://www.w3.org/2000/svg';
+  const xSize = dotR * 1.4;
+  const strokeW = Math.max(1, dotR * 0.55);
+
+  function makeX(cx: number, cy: number): SVGGElement {
+    const xg = document.createElementNS(ns, 'g');
+    xg.setAttribute('data-hurt-x', '1');
+    const l1 = document.createElementNS(ns, 'line');
+    l1.setAttribute('x1', String(cx - xSize)); l1.setAttribute('y1', String(cy - xSize));
+    l1.setAttribute('x2', String(cx + xSize)); l1.setAttribute('y2', String(cy + xSize));
+    l1.setAttribute('stroke', eyeColor); l1.setAttribute('stroke-width', String(strokeW));
+    l1.setAttribute('stroke-linecap', 'round');
+    const l2 = document.createElementNS(ns, 'line');
+    l2.setAttribute('x1', String(cx + xSize)); l2.setAttribute('y1', String(cy - xSize));
+    l2.setAttribute('x2', String(cx - xSize)); l2.setAttribute('y2', String(cy + xSize));
+    l2.setAttribute('stroke', eyeColor); l2.setAttribute('stroke-width', String(strokeW));
+    l2.setAttribute('stroke-linecap', 'round');
+    xg.appendChild(l1); xg.appendChild(l2);
+    return xg;
+  }
+
+  // Replace mouth rect with a circle
+  let mouthCircle: SVGCircleElement | null = null;
+  if (mouth) {
+    const mouthCx = origMouthX + origMouthW / 2;
+    const mouthCy = origMouthY + origMouthH / 2;
+    const mouthR = dotR * 1.2;
+    mouthCircle = document.createElementNS(ns, 'circle');
+    mouthCircle.setAttribute('cx', String(mouthCx));
+    mouthCircle.setAttribute('cy', String(mouthCy));
+    mouthCircle.setAttribute('r', String(mouthR));
+    mouthCircle.setAttribute('fill', mouth.getAttribute('fill') ?? '#000');
+    mouthCircle.setAttribute('opacity', mouth.getAttribute('opacity') ?? '0.6');
+    mouthCircle.setAttribute('data-hurt-mouth', '1');
+  }
+
+  const duration = 500;
+  const start = performance.now();
+  let xShown = false;
+
+  function step(now: number) {
+    const elapsed = now - start;
+    const t = Math.min(elapsed / duration, 1);
+
+    // Gentle squish
+    const squish = t < 0.3
+      ? 1 - 0.05 * (t / 0.3)
+      : 1 - 0.05 * (1 - (t - 0.3) / 0.7);
+    svg.style.transform = `scaleY(${squish})`;
+
+    // Show X eyes + circle mouth at the start
+    if (!xShown && t > 0.02) {
+      xShown = true;
+      le.style.display = 'none';
+      re.style.display = 'none';
+      g.appendChild(makeX(leCx, leCy));
+      g.appendChild(makeX(reCx, reCy));
+      if (mouth && mouthCircle) {
+        mouth.style.display = 'none';
+        g.appendChild(mouthCircle);
+      }
+    }
+
+    if (t >= 1) {
+      // Reset everything
+      svg.style.transform = '';
+      le.style.display = '';
+      re.style.display = '';
+      if (mouth) mouth.style.display = '';
+      // Remove X marks and circle mouth
+      g.querySelectorAll('[data-hurt-x]').forEach(el => el.remove());
+      g.querySelectorAll('[data-hurt-mouth]').forEach(el => el.remove());
+      return;
+    }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ─── Kiss animation ─────────────────────────────────────────────────────────
+
+/**
+ * Animate a "kiss" — one eye winks, mouth puckers, and a heart floats up.
+ */
+export function kiss(container: Element): void {
+  const svgEl = container.querySelector('svg');
+  if (!svgEl) return;
+
+  const leEl = container.querySelector<SVGEllipseElement>('[id$="_le"]');
+  const reEl = container.querySelector<SVGEllipseElement>('[id$="_re"]');
+  const mouth = svgEl.querySelector<SVGRectElement>('[data-mouth]');
+  if (!leEl || !reEl) return;
+
+  const svg = svgEl;
+  const le = leEl;
+  const re = reEl;
+  const g = svg.querySelector('g')!;
+  const ns = 'http://www.w3.org/2000/svg';
+
+  const dotR = parseFloat(le.getAttribute('rx') ?? '0');
+  const reCx = parseFloat(re.getAttribute('cx') ?? '0');
+  const reCy = parseFloat(re.getAttribute('cy') ?? '0');
+
+  const origMouthW = mouth ? parseFloat(mouth.getAttribute('width') ?? '0') : 0;
+  const origMouthH = mouth ? parseFloat(mouth.getAttribute('height') ?? '0') : 0;
+  const origMouthX = mouth ? parseFloat(mouth.getAttribute('x') ?? '0') : 0;
+  const origMouthY = mouth ? parseFloat(mouth.getAttribute('y') ?? '0') : 0;
+  const origMouthRx = mouth ? parseFloat(mouth.getAttribute('rx') ?? '0') : 0;
+  const mouthColor = mouth ? (mouth.getAttribute('fill') ?? '#000') : '#000';
+
+  // Pucker lips — ε shape (two curved bumps facing right)
+  let pucker: SVGPathElement | null = null;
+  if (mouth) {
+    const mcx = origMouthX + origMouthW / 2;
+    const mcy = origMouthY + origMouthH / 2;
+    const r = dotR * 1.2;
+    // Two stacked arcs forming the ε / "3" pucker
+    const d = [
+      `M ${mcx - r * 0.3} ${mcy - r}`,
+      `C ${mcx + r * 0.8} ${mcy - r}, ${mcx + r * 0.8} ${mcy}, ${mcx - r * 0.1} ${mcy}`,
+      `C ${mcx + r * 0.8} ${mcy}, ${mcx + r * 0.8} ${mcy + r}, ${mcx - r * 0.3} ${mcy + r}`,
+    ].join(' ');
+    pucker = document.createElementNS(ns, 'path');
+    pucker.setAttribute('d', d);
+    pucker.setAttribute('fill', 'none');
+    pucker.setAttribute('stroke', mouthColor);
+    pucker.setAttribute('stroke-width', String(Math.max(1, dotR * 0.45)));
+    pucker.setAttribute('stroke-linecap', 'round');
+    pucker.setAttribute('opacity', mouth.getAttribute('opacity') ?? '0.6');
+    pucker.setAttribute('data-kiss-pucker', '1');
+  }
+
+  // Floating heart
+  const heartSize = dotR * 2.5;
+  const heartX = reCx + dotR * 2;
+  const heartStartY = reCy - dotR;
+  const heart = document.createElementNS(ns, 'text');
+  heart.setAttribute('x', String(heartX));
+  heart.setAttribute('y', String(heartStartY));
+  heart.setAttribute('font-size', String(heartSize));
+  heart.setAttribute('text-anchor', 'middle');
+  heart.setAttribute('data-kiss-heart', '1');
+  heart.textContent = '❤';
+
+  const duration = 800;
+  const start = performance.now();
+  let shown = false;
+
+  function step(now: number) {
+    const elapsed = now - start;
+    const t = Math.min(elapsed / duration, 1);
+
+    // Wink the right eye (ry shrinks to a line)
+    const wink = t < 0.12 ? t / 0.12 : t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
+    re.setAttribute('ry', String(dotR * (1 - wink * 0.9)));
+
+    if (!shown && t > 0.02) {
+      shown = true;
+      if (mouth && pucker) {
+        mouth.style.display = 'none';
+        g.appendChild(pucker);
+      }
+      g.appendChild(heart);
+    }
+
+    // Float the heart upward and fade it out
+    if (shown) {
+      const floatT = Math.max(0, (t - 0.15) / 0.85);
+      const yOff = floatT * dotR * 8;
+      const opacity = Math.max(0, 1 - floatT * 1.3);
+      heart.setAttribute('y', String(heartStartY - yOff));
+      heart.setAttribute('opacity', String(opacity));
+    }
+
+    if (t >= 1) {
+      // Reset
+      re.setAttribute('ry', String(dotR));
+      if (mouth) mouth.style.display = '';
+      g.querySelectorAll('[data-kiss-pucker]').forEach(el => el.remove());
+      g.querySelectorAll('[data-kiss-heart]').forEach(el => el.remove());
+      return;
+    }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
 // ─── Main generator ─────────────────────────────────────────────────────────
 
 /**
@@ -331,7 +553,7 @@ export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
     <ellipse id="${uid}_le" cx="${lx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/>
     <ellipse id="${uid}_re" cx="${rx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/>
     <text x="${cx}" y="${letterY}" text-anchor="middle" font-family="monospace" font-size="${fontSize}" font-weight="700" fill="${p.dark}" opacity="0.35" dominant-baseline="central">${init}</text>
-    <rect x="${mouthX - mouthW / 2}" y="${mouthY}" width="${mouthW}" height="${mouthH}" rx="${mouthH / 2}" fill="${p.dark}" opacity="0.6"/>
+    <rect data-mouth="1" x="${mouthX - mouthW / 2}" y="${mouthY}" width="${mouthW}" height="${mouthH}" rx="${mouthH / 2}" fill="${p.dark}" opacity="0.6"/>
   </g>
 </svg>`;
 
@@ -350,18 +572,29 @@ export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
 
 /**
  * Mount a glowmoji into a DOM element — sets innerHTML, auto-blinks, and
- * wires up click-to-blink. Returns a cleanup function.
+ * wires up click interaction. Returns a cleanup function.
  *
  * ```ts
  * import { mount } from 'glowmoji';
  * const stop = mount(document.getElementById('avatar'), { name: 'Alice' });
+ * // with hurt animation on click:
+ * const stop = mount(el, { name: 'Bob' }, { onClickAnimation: 'hurt' });
  * // later: stop() to remove listeners and stop blinking
  * ```
  */
-export function mount(container: Element, options: GlowmojiOptions): () => void {
+export function mount(
+  container: Element,
+  options: GlowmojiOptions,
+  mountOptions?: { onClickAnimation?: ClickAnimation },
+): () => void {
   const { svg } = glowmoji(options);
   container.innerHTML = svg;
-  const onClick = () => blink(container);
+  const anim = mountOptions?.onClickAnimation ?? 'blink';
+  const onClick = () => {
+    if (anim === 'hurt') hurt(container);
+    else if (anim === 'kiss') kiss(container);
+    else blink(container);
+  };
   container.addEventListener('click', onClick);
   (container as HTMLElement).style.cursor = 'pointer';
   const stop = autoBlink(container);
