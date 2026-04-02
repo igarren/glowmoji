@@ -258,7 +258,7 @@
       const mouthW = faceR*0.3;
       const mouthX = cx + ((h>>10)%5) - 2;
       const mouthH = Math.max(1.5, s*0.02);
-      const outerRx = shape==='circle' ? s/2 : shape==='squircle' ? Math.round(s*0.22) : Math.round(s*0.07);
+      const outerRx = shape==='circle' ? s/2 : shape==='rounded' ? Math.round(s*0.22) : Math.round(s*0.07);
       const hlAngle = shape==='square' ? -15 : -30;
       const glowLayers = [
         {r:faceR*1.5,o:0.07},{r:faceR*1.25,o:0.10},

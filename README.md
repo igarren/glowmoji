@@ -88,3 +88,7 @@ interface GlowmojiResult {
 ## license
 
 MIT
+
+---
+
+if this saved you some time → [ko-fi.com/igarren](https://ko-fi.com/igarren)

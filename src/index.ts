@@ -1,13 +1,13 @@
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export type Shape = 'square' | 'squircle' | 'circle';
+export type Shape = 'square' | 'rounded' | 'circle';
 
 export interface GlowmojiOptions {
   /** Seed string — username, email, anything deterministic */
   name: string;
   /** Pixel size (width & height). Default: 64 */
   size?: number;
-  /** Outer + face shape. Default: 'squircle' */
+  /** Outer + face shape. Default: 'rounded' */
   shape?: Shape;
   /**
    * Override the glow/face color with any CSS hex color (e.g. '#ff6b6b').
@@ -86,7 +86,7 @@ function escapeXml(s: string): string {
 
 export function getBorderRadius(shape: Shape, size: number): string {
   if (shape === 'circle') return `${size / 2}px`;
-  if (shape === 'squircle') return `${Math.round(size * 0.22)}px`;
+  if (shape === 'rounded') return `${Math.round(size * 0.22)}px`;
   return `${Math.round(size * 0.07)}px`;
 }
 
@@ -108,7 +108,7 @@ function faceShape(
     return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`;
   }
 
-  // For square / squircle we draw a rounded rect centred on (cx, cy).
+  // For square / rounded we draw a rounded rect centred on (cx, cy).
   const side = r * 2;
   const x = cx - r;
   const y = cy - r;
@@ -118,7 +118,7 @@ function faceShape(
     return `<rect x="${x}" y="${y}" width="${side}" height="${side}" rx="${rx}" ry="${rx}" fill="${fill}"/>`;
   }
 
-  // squircle — use an SVG superellipse path for a smooth iOS-style shape
+  // rounded — use an SVG superellipse path for a smooth iOS-style shape
   return superellipsePath(cx, cy, r, r, fill);
 }
 
@@ -205,12 +205,12 @@ function specularHighlight(
  *
  * ```ts
  * import { glowmoji } from 'glowmoji';
- * const { svg, dataUri } = glowmoji({ name: 'Alice', size: 64, shape: 'squircle', color: '#ff6b6b' });
+ * const { svg, dataUri } = glowmoji({ name: 'Alice', size: 64, shape: 'rounded', color: '#ff6b6b' });
  * document.getElementById('avatar').innerHTML = svg;
  * ```
  */
 export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
-  const { name, size: s = 64, shape = 'squircle', color } = options;
+  const { name, size: s = 64, shape = 'rounded', color } = options;
 
   const base = getPalette(name);
   // If a custom color is passed, override face + glow while keeping bg/dark
@@ -245,7 +245,7 @@ export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
   // Outer clip
   const outerRx =
     shape === 'circle' ? s / 2 :
-    shape === 'squircle' ? Math.round(s * 0.22) :
+    shape === 'rounded' ? Math.round(s * 0.22) :
     Math.round(s * 0.07);
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" style="display:block;">

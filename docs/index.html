@@ -173,7 +173,7 @@
 <span class="kw">const</span> { svg, dataUri } = <span class="fn">glowmoji</span>({
   name: <span class="str">'Alice'</span>,
   size: <span class="str">64</span>,
-  shape: <span class="str">'squircle'</span>,
+  shape: <span class="str">'rounded'</span>,
   color: <span class="str">'#ff6b6b'</span>, <span class="cm">// optional</span>
 });
 
@@ -244,7 +244,7 @@ img.src = dataUri;</code></pre>
       <tbody>
         <tr><td>name</td><td><code>string</code></td><td>—</td><td>seed for the avatar. same name = same result</td></tr>
         <tr><td>size</td><td><code>number</code></td><td><code>64</code></td><td>width &amp; height in px</td></tr>
-        <tr><td>shape</td><td><code>Shape</code></td><td><code>squircle</code></td><td>square · rounded · circle</td></tr>
+        <tr><td>shape</td><td><code>Shape</code></td><td><code>rounded</code></td><td>square · rounded · circle</td></tr>
         <tr><td>color</td><td><code>string</code></td><td>—</td><td>hex color override. glow is derived automatically</td></tr>
       </tbody>
     </table>
@@ -273,7 +273,7 @@ img.src = dataUri;</code></pre>
 </div>
 
 <footer>
-  <p>glowmoji · MIT · <a href="https://github.com/igarren/glowmoji" target="_blank">github</a></p>
+  <p>glowmoji · MIT · <a href="https://github.com/igarren/glowmoji" target="_blank">github</a> · <a href="https://ko-fi.com/igarren" target="_blank">ko-fi</a></p>
 </footer>
 
 <script>
@@ -321,7 +321,7 @@ img.src = dataUri;</code></pre>
     const eyeY = cy-faceR*0.1, eyeGap = faceR*0.32, lx = cx-eyeGap, rx = cx+eyeGap, dotR = faceR*0.1;
     const fontSize = Math.round(s*0.18), letterY = cy+faceR*0.22;
     const mouthY = cy+faceR*0.46, mouthW = faceR*0.3, mouthX = cx+((h>>10)%5)-2, mouthH = Math.max(1.5,s*0.02);
-    const outerRx = shape==='circle'?s/2:shape==='squircle'?Math.round(s*0.22):Math.round(s*0.07);
+    const outerRx = shape==='circle'?s/2:shape==='rounded'?Math.round(s*0.22):Math.round(s*0.07);
     const hlAngle = shape==='square'?-15:-30;
     const glowLayers = [{r:faceR*1.5,o:0.07},{r:faceR*1.25,o:0.10},{r:faceR*1.05,o:0.14},{r:faceR*0.88,o:0.18},{r:faceR*0.7,o:0.15}].map(l=>`<circle cx="${cx}" cy="${cy}" r="${l.r}" fill="${p.glow}" opacity="${l.o}"/>`).join('\n    ');
     const hlx = cx-faceR*0.25, hly = cy-faceR*0.3;
@@ -350,9 +350,9 @@ img.src = dataUri;</code></pre>
   }
 
   // ── state ────────────────────────────────────────────────────────────
-  let currentShape = 'squircle', useColor = false;
+  let currentShape = 'rounded', useColor = false;
   const NAMES = ['Alice','Bob','Cara','Dev','Eli','Faye','Max','Zara'];
-  function getBorderRadius(shape, s) { return shape==='circle'?s/2+'px':shape==='squircle'?Math.round(s*0.22)+'px':Math.round(s*0.07)+'px'; }
+  function getBorderRadius(shape, s) { return shape==='circle'?s/2+'px':shape==='rounded'?Math.round(s*0.22)+'px':Math.round(s*0.07)+'px'; }
   function getColor() { return useColor ? document.getElementById('colorInput').value : null; }
   function clearColor() { useColor=false; document.getElementById('colorMode').textContent=''; updateAll(); }
   function renderAvatar(name, size, shape) {
@@ -384,7 +384,7 @@ img.src = dataUri;</code></pre>
     const custom = document.getElementById('nameInput').value.trim() || 'igarren';
 
     // nav avatar
-    const {html:navHtml,uid:navUid}=renderAvatar(custom,24,'squircle');
+    const {html:navHtml,uid:navUid}=renderAvatar(custom,24,'rounded');
     document.getElementById('navAvatar').innerHTML=navHtml;
     setTimeout(()=>startAutoBlink(navUid),100);
 
