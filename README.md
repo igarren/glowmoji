@@ -91,4 +91,4 @@ MIT
 
 ---
 
-if this saved you some time → [ko-fi.com/igarren](https://ko-fi.com/igarren)
+if this made your app look cooler → [ko-fi.com/igarren](https://ko-fi.com/igarren)
