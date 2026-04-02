@@ -15,6 +15,11 @@ export interface GlowmojiOptions {
    * tints of this color while bg and dark are kept from the palette.
    */
   color?: string;
+  /**
+   * Skip the dark background rect — useful on light pages.
+   * The glow will blend into whatever is behind the SVG instead.
+   */
+  transparent?: boolean;
 }
 
 export interface GlowmojiResult {
@@ -24,6 +29,15 @@ export interface GlowmojiResult {
   dataUri: string;
   /** Palette that was chosen */
   palette: Palette;
+  /**
+   * Animate a blink on the avatar element.
+   * Pass the DOM element that contains the SVG (e.g. the div you set innerHTML on).
+   */
+  blink: (container: Element) => void;
+  /**
+   * Start auto-blinking on an interval. Returns a cleanup function to stop it.
+   */
+  autoBlink: (container: Element) => () => void;
 }
 
 export interface Palette {
@@ -198,6 +212,56 @@ function specularHighlight(
   return `<ellipse cx="${hx}" cy="${hy}" rx="${hrx}" ry="${hry}" fill="white" opacity="0.28" transform="rotate(${angle} ${hx} ${hy})"/>`;
 }
 
+// ─── Blink animation ────────────────────────────────────────────────────────
+
+/**
+ * Animate a single blink on the avatar inside `container`.
+ * Looks for SVG eye ellipses by their id pattern.
+ */
+export function blink(container: Element): void {
+  // eyes have ids like "XXXXXX_le" and "XXXXXX_re"
+  const le = container.querySelector<SVGEllipseElement>('[id$="_le"]');
+  const re = container.querySelector<SVGEllipseElement>('[id$="_re"]');
+  if (!le || !re) return;
+  const dotR = parseFloat(le.getAttribute('rx') ?? '0');
+  const start = performance.now();
+  function step(now: number) {
+    const el = now - start;
+    let ry: number;
+    if (el < 70)       ry = dotR * (1 - el / 70);
+    else if (el < 110) ry = 0;
+    else if (el < 220) ry = dotR * ((el - 110) / 110);
+    else {
+      le!.setAttribute('ry', String(dotR));
+      re!.setAttribute('ry', String(dotR));
+      return;
+    }
+    const v = String(Math.max(0, ry));
+    le!.setAttribute('ry', v);
+    re!.setAttribute('ry', v);
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/**
+ * Start auto-blinking on an interval. Returns a cleanup function to stop it.
+ *
+ * ```ts
+ * const stop = autoBlink(document.getElementById('avatar'));
+ * // later...
+ * stop();
+ * ```
+ */
+export function autoBlink(container: Element): () => void {
+  let timer: ReturnType<typeof setTimeout>;
+  function next() {
+    timer = setTimeout(() => { blink(container); next(); }, 2000 + Math.random() * 3500);
+  }
+  timer = setTimeout(() => { blink(container); next(); }, 500 + Math.random() * 2000);
+  return () => clearTimeout(timer);
+}
+
 // ─── Main generator ─────────────────────────────────────────────────────────
 
 /**
@@ -210,7 +274,7 @@ function specularHighlight(
  * ```
  */
 export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
-  const { name, size: s = 64, shape = 'rounded', color } = options;
+  const { name, size: s = 64, shape = 'rounded', color, transparent = false } = options;
 
   const base = getPalette(name);
   // If a custom color is passed, override face + glow while keeping bg/dark
@@ -260,7 +324,7 @@ export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
     </clipPath>
   </defs>
   <g clip-path="url(#clip_${uid})">
-    <rect width="${s}" height="${s}" fill="${p.bg}"/>
+    ${transparent ? '' : `<rect width="${s}" height="${s}" fill="${p.bg}"/>`}
     ${glowLayers(cx, cy, faceR, shape, p.glow, uid)}
     ${faceShape(cx, cy, faceR, shape, `url(#fg_${uid})`, uid)}
     ${specularHighlight(cx, cy, faceR, shape)}
@@ -273,7 +337,39 @@ export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
 
   const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
-  return { svg, dataUri, palette: p };
+  return {
+    svg,
+    dataUri,
+    palette: p,
+    blink: (container: Element) => blink(container),
+    autoBlink: (container: Element) => autoBlink(container),
+  };
+}
+
+// ─── Mount helper ───────────────────────────────────────────────────────────
+
+/**
+ * Mount a glowmoji into a DOM element — sets innerHTML, auto-blinks, and
+ * wires up click-to-blink. Returns a cleanup function.
+ *
+ * ```ts
+ * import { mount } from 'glowmoji';
+ * const stop = mount(document.getElementById('avatar'), { name: 'Alice' });
+ * // later: stop() to remove listeners and stop blinking
+ * ```
+ */
+export function mount(container: Element, options: GlowmojiOptions): () => void {
+  const { svg } = glowmoji(options);
+  container.innerHTML = svg;
+  const onClick = () => blink(container);
+  container.addEventListener('click', onClick);
+  (container as HTMLElement).style.cursor = 'pointer';
+  const stop = autoBlink(container);
+  return () => {
+    stop();
+    container.removeEventListener('click', onClick);
+    (container as HTMLElement).style.cursor = '';
+  };
 }
 
 // convenience re-exports

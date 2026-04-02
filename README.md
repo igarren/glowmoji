@@ -14,10 +14,12 @@ or via CDN (no build step needed):
 
 ```html
 <script src="https://unpkg.com/glowmoji/dist/glowmoji.global.js"></script>
-<script>
-  const { svg } = glowmoji({ name: 'Alice' });
-  document.getElementById('avatar').innerHTML = svg;
-</script>
+<body>
+  <div id="avatar"></div>
+  <script>
+    glowmoji.mount(document.getElementById('avatar'), { name: 'Alice' });
+  </script>
+</body>
 ```
 
 ---
@@ -27,15 +29,17 @@ or via CDN (no build step needed):
 ### vanilla / any framework
 
 ```ts
-import { glowmoji } from 'glowmoji';
+import { mount } from 'glowmoji';
 
-const { svg, dataUri } = glowmoji({ name: 'Alice' });
+// sets innerHTML, auto-blinks, click-to-blink — all wired up
+const stop = mount(document.getElementById('avatar'), { name: 'Alice' });
 
-// inline SVG
+// or manually if you need more control
+import { glowmoji, autoBlink, blink } from 'glowmoji';
+const { svg } = glowmoji({ name: 'Alice' });
 el.innerHTML = svg;
-
-// or as an image
-img.src = dataUri;
+el.addEventListener('click', () => blink(el));
+const stop = autoBlink(el);
 ```
 
 ### react
@@ -45,6 +49,9 @@ import { Glowmoji } from 'glowmoji/react';
 
 <Glowmoji name="Alice" />
 <Glowmoji name="Alice" size={48} shape="circle" color="#a78bfa" />
+
+// disable auto-blink
+<Glowmoji name="Alice" blink={false} />
 ```
 
 Requires React 17+. Works with whatever version your project already has.
@@ -59,8 +66,26 @@ Requires React 17+. Works with whatever version your project already has.
 | `size` | `number` | `64` | width & height in px |
 | `shape` | `Shape` | `rounded` | `square` · `rounded` · `circle` |
 | `color` | `string` | — | hex color override, e.g. `#ff6b6b` |
+| `transparent` | `boolean` | `false` | skip the dark bg — use on light pages |
 
 the `color` prop replaces the auto palette. glow is derived automatically.
+
+---
+
+## blink
+
+the result includes blink utilities you can wire up yourself:
+
+```ts
+const { svg, blink, autoBlink } = glowmoji({ name: 'Alice' });
+el.innerHTML = svg;
+
+// click to blink
+el.addEventListener('click', () => blink(el));
+
+// or start auto-blinking (returns a stop function)
+const stop = autoBlink(el);
+```
 
 ---
 
@@ -74,12 +99,15 @@ interface GlowmojiOptions {
   size?: number;
   shape?: Shape;
   color?: string;
+  transparent?: boolean;
 }
 
 interface GlowmojiResult {
   svg: string;
   dataUri: string;
   palette: Palette;
+  blink: (container: Element) => void;
+  autoBlink: (container: Element) => () => void;
 }
 ```
 

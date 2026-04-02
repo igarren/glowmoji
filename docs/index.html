@@ -151,10 +151,12 @@
     <div class="code-block">
       <div class="code-block-header"><span class="code-lang">html</span><button class="copy-btn" onclick="copyBlock(this)">copy</button></div>
       <pre><code><span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="str">"https://unpkg.com/glowmoji/dist/glowmoji.global.js"</span><span class="tag">&gt;&lt;/script&gt;</span>
-<span class="tag">&lt;script&gt;</span>
-  <span class="kw">const</span> { svg } = <span class="fn">glowmoji</span>({ name: <span class="str">'Alice'</span> });
-  document.<span class="fn">getElementById</span>(<span class="str">'avatar'</span>).innerHTML = svg;
-<span class="tag">&lt;/script&gt;</span></code></pre>
+<span class="tag">&lt;body&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">id</span>=<span class="str">"avatar"</span><span class="tag">&gt;&lt;/div&gt;</span>
+  <span class="tag">&lt;script&gt;</span>
+    glowmoji.<span class="fn">mount</span>(document.<span class="fn">getElementById</span>(<span class="str">'avatar'</span>), { name: <span class="str">'Alice'</span> });
+  <span class="tag">&lt;/script&gt;</span>
+<span class="tag">&lt;/body&gt;</span></code></pre>
     </div>
   </div>
 
@@ -168,24 +170,35 @@
     <p>works anywhere — no framework required.</p>
     <div class="code-block">
       <div class="code-block-header"><span class="code-lang">ts</span><button class="copy-btn" onclick="copyBlock(this)">copy</button></div>
-      <pre><code><span class="kw">import</span> { glowmoji } <span class="kw">from</span> <span class="str">'glowmoji'</span>;
+      <pre><code><span class="kw">import</span> { mount } <span class="kw">from</span> <span class="str">'glowmoji'</span>;
 
-<span class="kw">const</span> { svg, dataUri } = <span class="fn">glowmoji</span>({
-  name: <span class="str">'Alice'</span>,
-  size: <span class="str">64</span>,
-  shape: <span class="str">'rounded'</span>,
-  color: <span class="str">'#ff6b6b'</span>, <span class="cm">// optional</span>
-});
+<span class="cm">// sets innerHTML, auto-blinks, click-to-blink</span>
+<span class="kw">const</span> stop = <span class="fn">mount</span>(document.<span class="fn">getElementById</span>(<span class="str">'avatar'</span>), { name: <span class="str">'Alice'</span> });
 
-<span class="cm">// inline SVG</span>
+<span class="cm">// or manually for more control</span>
+<span class="kw">import</span> { glowmoji, autoBlink, blink } <span class="kw">from</span> <span class="str">'glowmoji'</span>;
+<span class="kw">const</span> { svg } = <span class="fn">glowmoji</span>({ name: <span class="str">'Alice'</span>, transparent: <span class="str">true</span> });
 el.innerHTML = svg;
-
-<span class="cm">// or as an img src</span>
-img.src = dataUri;</code></pre>
+el.<span class="fn">addEventListener</span>(<span class="str">'click'</span>, () => <span class="fn">blink</span>(el));
+<span class="kw">const</span> stop = <span class="fn">autoBlink</span>(el);</code></pre>
     </div>
 
-    <h2>react</h2>
-    <p>import from the <code>/react</code> subpath for a typed component.</p>
+    <h2>blink</h2>
+    <p>the result includes blink utilities — wire them up however you like.</p>
+    <div class="code-block">
+      <div class="code-block-header"><span class="code-lang">ts</span><button class="copy-btn" onclick="copyBlock(this)">copy</button></div>
+      <pre><code><span class="kw">const</span> { svg, blink, autoBlink } = <span class="fn">glowmoji</span>({ name: <span class="str">'Alice'</span> });
+el.innerHTML = svg;
+
+<span class="cm">// click to blink</span>
+el.<span class="fn">addEventListener</span>(<span class="str">'click'</span>, () => <span class="fn">blink</span>(el));
+
+<span class="cm">// or auto-blink (returns a stop function)</span>
+<span class="kw">const</span> stop = <span class="fn">autoBlink</span>(el);
+</code></pre>
+    </div>
+
+    <h2>react</h2>    <p>import from the <code>/react</code> subpath for a typed component.</p>
     <div class="code-block">
       <div class="code-block-header"><span class="code-lang">tsx</span><button class="copy-btn" onclick="copyBlock(this)">copy</button></div>
       <pre><code><span class="kw">import</span> { Glowmoji } <span class="kw">from</span> <span class="str">'glowmoji/react'</span>;
@@ -246,6 +259,7 @@ img.src = dataUri;</code></pre>
         <tr><td>size</td><td><code>number</code></td><td><code>64</code></td><td>width &amp; height in px</td></tr>
         <tr><td>shape</td><td><code>Shape</code></td><td><code>rounded</code></td><td>square · rounded · circle</td></tr>
         <tr><td>color</td><td><code>string</code></td><td>—</td><td>hex color override. glow is derived automatically</td></tr>
+        <tr><td>transparent</td><td><code>boolean</code></td><td><code>false</code></td><td>skip the dark bg — use on light pages</td></tr>
       </tbody>
     </table>
 
