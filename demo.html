@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>glowmoji</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #080808;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #888;
+      min-height: 100vh;
+    }
+
+    /* ── layout ── */
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 4rem 2rem 6rem;
+    }
+
+    /* ── hero ── */
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      margin-bottom: 3.5rem;
+    }
+    .hero-text h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .hero-text p {
+      font-size: 0.85rem;
+      color: #444;
+      margin-top: 4px;
+    }
+
+    /* ── controls card ── */
+    .card {
+      background: #0f0f0f;
+      border: 1px solid #1c1c1c;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .field-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.25rem;
+    }
+    .field-row input {
+      flex: 1;
+      font-size: 0.875rem;
+      background: #161616;
+      border: 1px solid #222;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .field-row input:focus { border-color: #444; }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+    .color-row label { font-size: 0.75rem; color: #444; }
+    .color-row input[type=color] {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #222;
+      border-radius: 6px;
+      background: none;
+      cursor: pointer;
+      padding: 2px;
+    }
+    .color-clear {
+      font-size: 0.7rem;
+      color: #333;
+      background: none;
+      border: 1px solid #1c1c1c;
+      border-radius: 5px;
+      padding: 3px 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color .15s, border-color .15s;
+    }
+    .color-clear:hover { color: #888; border-color: #333; }
+
+    .pill-group {
+      display: flex;
+      gap: 6px;
+    }
+    .pill {
+      font-size: 0.75rem;
+      padding: 5px 14px;
+      border: 1px solid #1c1c1c;
+      border-radius: 999px;
+      background: transparent;
+      color: #444;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .pill:hover { color: #888; border-color: #333; }
+    .pill.active { background: #1a1a1a; color: #fff; border-color: #3a3a3a; }
+
+    /* ── section label ── */
+    .label {
+      font-size: 0.7rem;
+      color: #2a2a2a;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    /* ── grids ── */
+    .grid {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 2.5rem;
+    }
+    .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .cell-lbl {
+      font-size: 0.7rem;
+      color: #333;
+    }
+    .avatar-wrap {
+      overflow: hidden;
+      display: block;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: transform .15s, opacity .15s;
+    }
+    .avatar-wrap:hover { transform: scale(1.06); opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="hero">
+      <div id="heroAvatar"></div>
+      <div class="hero-text">
+        <h1>glowmoji</h1>
+        <p>deterministic glowing avatars — type a name, get a face</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-row">
+        <input type="text" id="nameInput" placeholder="type a name…" value="igarren" oninput="updateAll()"/>
+      </div>
+      <div class="color-row">
+        <label>color</label>
+        <input type="color" id="colorInput" value="#a78bfa" oninput="updateAll()"/>
+        <button class="color-clear" onclick="clearColor()">use palette</button>
+        <span id="colorMode" style="font-size:0.7rem;color:#2a2a2a;margin-left:4px;"></span>
+      </div>
+      <div class="pill-group">
+        <button class="pill" id="btn-square" onclick="setShape('square')">square</button>
+        <button class="pill active" id="btn-squircle" onclick="setShape('squircle')">rounded</button>
+        <button class="pill" id="btn-circle" onclick="setShape('circle')">circle</button>
+      </div>
+    </div>
+
+    <div class="label">sizes</div>
+    <div class="grid" id="sizeGrid"></div>
+
+    <div class="label">name variations</div>
+    <div class="grid" id="avatarGrid"></div>
+
+  </div>
+
+  <script>
+    const PALETTES = [
+      { bg: '#050a06', face: '#c2f0a0', glow: '#d8ffb8', dark: '#1a3a08' },
+      { bg: '#05060f', face: '#a0b8f0', glow: '#c0d4ff', dark: '#0a1840' },
+      { bg: '#0f0510', face: '#dda0f0', glow: '#f0c8ff', dark: '#3a0850' },
+      { bg: '#0f0a00', face: '#f0d898', glow: '#fff0b0', dark: '#3a2800' },
+      { bg: '#0f0505', face: '#f0a8a8', glow: '#ffc8ff', dark: '#3a0808' },
+      { bg: '#00080f', face: '#98d8f0', glow: '#b8f0ff', dark: '#00283a' },
+      { bg: '#050f08', face: '#98f0c0', glow: '#b8ffd8', dark: '#003a18' },
+      { bg: '#0a080f', face: '#b8a8f0', glow: '#d4c8ff', dark: '#180838' },
+    ];
+
+    function hashStr(s) {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+      return Math.abs(h);
+    }
+    function getPalette(name) { return PALETTES[hashStr(name) % PALETTES.length]; }
+    function getInitial(name) { return (name || '?').trim().charAt(0).toUpperCase(); }
+
+    function lighten(hex, amount) {
+      const n = parseInt(hex.replace('#',''), 16);
+      const r = Math.min(255, Math.round(((n>>16)&0xff) + (255-((n>>16)&0xff))*amount));
+      const g = Math.min(255, Math.round(((n>>8)&0xff)  + (255-((n>>8)&0xff))*amount));
+      const b = Math.min(255, Math.round((n&0xff)        + (255-(n&0xff))*amount));
+      return '#' + ((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);
+    }
+
+    function superellipsePath(cx, cy, rx, ry, fill) {
+      const k = 0.85, kx = rx*k, ky = ry*k;
+      const d = [
+        `M ${cx} ${cy-ry}`,
+        `C ${cx+kx} ${cy-ry}, ${cx+rx} ${cy-ky}, ${cx+rx} ${cy}`,
+        `C ${cx+rx} ${cy+ky}, ${cx+kx} ${cy+ry}, ${cx} ${cy+ry}`,
+        `C ${cx-kx} ${cy+ry}, ${cx-rx} ${cy+ky}, ${cx-rx} ${cy}`,
+        `C ${cx-rx} ${cy-ky}, ${cx-kx} ${cy-ry}, ${cx} ${cy-ry}`,
+        'Z'
+      ].join(' ');
+      return `<path d="${d}" fill="${fill}"/>`;
+    }
+
+    function faceShape(cx, cy, r, shape, fill) {
+      if (shape === 'circle') return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`;
+      const side = r*2, x = cx-r, y = cy-r;
+      if (shape === 'square') {
+        const rx = r*0.15;
+        return `<rect x="${x}" y="${y}" width="${side}" height="${side}" rx="${rx}" ry="${rx}" fill="${fill}"/>`;
+      }
+      return superellipsePath(cx, cy, r, r, fill);
+    }
+
+    function makeSvg(name, size, shape, color) {
+      const base = getPalette(name);
+      const p = color ? { ...base, face: color, glow: lighten(color, 0.25) } : base;
+      const h = hashStr(name);
+      const init = getInitial(name);
+      const uid = Math.random().toString(36).slice(2, 8);
+      const s = size;
+      const cx = s/2, cy = s/2;
+      const faceR = s*0.43;
+      const eyeY = cy - faceR*0.1;
+      const eyeGap = faceR*0.32;
+      const lx = cx - eyeGap, rx = cx + eyeGap;
+      const dotR = faceR*0.1;
+      const fontSize = Math.round(s*0.18);
+      const letterY = cy + faceR*0.22;
+      const mouthY = cy + faceR*0.46;
+      const mouthW = faceR*0.3;
+      const mouthX = cx + ((h>>10)%5) - 2;
+      const mouthH = Math.max(1.5, s*0.02);
+      const outerRx = shape==='circle' ? s/2 : shape==='squircle' ? Math.round(s*0.22) : Math.round(s*0.07);
+      const hlAngle = shape==='square' ? -15 : -30;
+      const glowLayers = [
+        {r:faceR*1.5,o:0.07},{r:faceR*1.25,o:0.10},
+        {r:faceR*1.05,o:0.14},{r:faceR*0.88,o:0.18},{r:faceR*0.7,o:0.15},
+      ].map(l=>`<circle cx="${cx}" cy="${cy}" r="${l.r}" fill="${p.glow}" opacity="${l.o}"/>`).join('\n    ');
+      const hlx = cx - faceR*0.25, hly = cy - faceR*0.3;
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" style="display:block;">
+  <defs>
+    <radialGradient id="fg_${uid}" cx="36%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="${p.glow}"/>
+      <stop offset="40%" stop-color="${p.face}"/>
+      <stop offset="100%" stop-color="${p.face}"/>
+    </radialGradient>
+    <clipPath id="clip_${uid}">
+      <rect width="${s}" height="${s}" rx="${outerRx}" ry="${outerRx}"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#clip_${uid})">
+    <rect width="${s}" height="${s}" fill="${p.bg}"/>
+    ${glowLayers}
+    ${faceShape(cx, cy, faceR, shape, `url(#fg_${uid})`)}
+    <ellipse cx="${hlx}" cy="${hly}" rx="${faceR*0.18}" ry="${faceR*0.1}" fill="white" opacity="0.28" transform="rotate(${hlAngle} ${hlx} ${hly})"/>
+    <ellipse id="${uid}_le" cx="${lx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/>
+    <ellipse id="${uid}_re" cx="${rx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/>
+    <text x="${cx}" y="${letterY}" text-anchor="middle" font-family="monospace" font-size="${fontSize}" font-weight="700" fill="${p.dark}" opacity="0.35" dominant-baseline="central">${init}</text>
+    <rect x="${mouthX - mouthW/2}" y="${mouthY}" width="${mouthW}" height="${mouthH}" rx="${mouthH/2}" fill="${p.dark}" opacity="0.6"/>
+  </g>
+</svg>`;
+    }
+
+    // ── blink ────────────────────────────────────────────────────────────
+    const blinkTimers = {};
+    function animateBlink(uid) {
+      const le = document.getElementById(uid+'_le');
+      const re = document.getElementById(uid+'_re');
+      if (!le || !re) return;
+      const dotR = parseFloat(le.getAttribute('rx'));
+      const start = performance.now();
+      function step(now) {
+        const el = now - start;
+        let ry;
+        if (el < 70)       ry = dotR * (1 - el/70);
+        else if (el < 110) ry = 0;
+        else if (el < 220) ry = dotR * ((el-110)/110);
+        else { le.setAttribute('ry', dotR); re.setAttribute('ry', dotR); return; }
+        const v = Math.max(0, ry);
+        le.setAttribute('ry', v); re.setAttribute('ry', v);
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    function startAutoBlink(uid) {
+      if (blinkTimers[uid]) clearTimeout(blinkTimers[uid]);
+      function next() {
+        blinkTimers[uid] = setTimeout(() => { animateBlink(uid); next(); }, 2000 + Math.random()*3500);
+      }
+      blinkTimers[uid] = setTimeout(() => { animateBlink(uid); next(); }, 500 + Math.random()*2000);
+    }
+
+    // ── state ────────────────────────────────────────────────────────────
+    let currentShape = 'squircle';
+    let useColor = false;
+    const NAMES = ['Alice','Bob','Cara','Dev','Eli','Faye','Max','Zara'];
+
+    function getBorderRadius(shape, s) {
+      if (shape==='circle') return s/2+'px';
+      if (shape==='squircle') return Math.round(s*0.22)+'px';
+      return Math.round(s*0.07)+'px';
+    }
+
+    function getColor() {
+      return useColor ? document.getElementById('colorInput').value : null;
+    }
+
+    function clearColor() {
+      useColor = false;
+      document.getElementById('colorMode').textContent = '';
+      updateAll();
+    }
+
+    function renderAvatar(name, size, shape) {
+      const color = getColor();
+      const svg = makeSvg(name, size, shape, color);
+      const br = getBorderRadius(shape, size);
+      const m = svg.match(/id="fg_(\w+)"/);
+      const uid = m ? m[1] : '';
+      return {
+        html: `<div class="avatar-wrap" style="width:${size}px;height:${size}px;border-radius:${br};" onclick="animateBlink('${uid}')">${svg}</div>`,
+        uid
+      };
+    }
+
+    function renderGroup(containerId, names, size) {
+      const c = document.getElementById(containerId);
+      c.innerHTML = '';
+      names.forEach(n => {
+        const { html, uid } = renderAvatar(n, size, currentShape);
+        c.innerHTML += `<div class="cell">${html}<span class="cell-lbl">${n}</span></div>`;
+        setTimeout(() => startAutoBlink(uid), 100);
+      });
+    }
+
+    function setShape(s) {
+      currentShape = s;
+      document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+      document.getElementById('btn-'+s).classList.add('active');
+      updateAll();
+    }
+
+    // wire color picker — only activate once user interacts with it
+    document.getElementById('colorInput').addEventListener('input', () => {
+      useColor = true;
+      document.getElementById('colorMode').textContent = 'custom';
+      updateAll();
+    });
+
+    function updateAll() {
+      const custom = document.getElementById('nameInput').value.trim() || 'igarren';
+      const color = getColor();
+
+      // hero
+      const { html: heroHtml, uid: heroUid } = renderAvatar(custom, 80, currentShape);
+      document.getElementById('heroAvatar').innerHTML = heroHtml;
+      setTimeout(() => startAutoBlink(heroUid), 100);
+
+      // sizes
+      const sc = document.getElementById('sizeGrid');
+      sc.innerHTML = '';
+      [24, 32, 48, 64, 80, 96].forEach(sz => {
+        const { html, uid } = renderAvatar(custom, sz, currentShape);
+        sc.innerHTML += `<div class="cell">${html}<span class="cell-lbl">${sz}px</span></div>`;
+        setTimeout(() => startAutoBlink(uid), 100);
+      });
+
+      // name grid
+      const names = [custom, ...NAMES.filter(n => n.toLowerCase() !== custom.toLowerCase()).slice(0, 7)];
+      renderGroup('avatarGrid', names, 64);
+    }
+
+    updateAll();
+  </script>
+</body>
+</html>
