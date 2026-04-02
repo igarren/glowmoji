@@ -57,7 +57,7 @@ Requires React 17+. Works with whatever version your project already has.
 |---|---|---|---|
 | `name` | `string` | — | seed for the avatar. same name = same result |
 | `size` | `number` | `64` | width & height in px |
-| `shape` | `Shape` | `squircle` | `square` · `squircle` · `circle` |
+| `shape` | `Shape` | `rounded` | `square` · `rounded` · `circle` |
 | `color` | `string` | — | hex color override, e.g. `#ff6b6b` |
 
 the `color` prop replaces the auto palette. glow is derived automatically.
@@ -67,7 +67,7 @@ the `color` prop replaces the auto palette. glow is derived automatically.
 ## types
 
 ```ts
-type Shape = 'square' | 'squircle' | 'circle';
+type Shape = 'square' | 'rounded' | 'circle';
 
 interface GlowmojiOptions {
   name: string;
