@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>glowmoji — deterministic glowing avatars</title>
   <meta name="description" content="Deterministic SVG avatars with a glow. Same name, same face, every time. Zero dependencies."/>
+  <script src="https://unpkg.com/glowmoji/dist/glowmoji.global.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -17,7 +18,27 @@
       --accent: #a78bfa;
     }
     html { scroll-behavior: smooth; }
-    body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); line-height: 1.6; }
+    body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); line-height: 1.6; transition: background .2s, color .2s; }
+
+    /* light mode */
+    body.light {
+      --bg: #f8f8f8;
+      --surface: #fff;
+      --border: #e5e5e5;
+      --text: #111;
+      --muted: #666;
+      --dim: #999;
+      --accent: #7c3aed;
+    }
+    body.light .nav-brand { color: #111; }
+    body.light .field-row input { background: #f0f0f0; border-color: #ddd; color: #111; }
+    body.light .code-block { background: #f4f4f4; border-color: #e0e0e0; }
+    body.light .code-block code { color: #333; }
+    body.light .code-block-header { border-color: #e0e0e0; }
+    body.light .install-strip { background: #fff; }
+    body.light .install-strip code { color: #111; }
+    body.light td:first-child { color: #111; }
+    body.light td code { background: #eee; color: #555; }
 
     /* nav */
     nav {
@@ -27,13 +48,17 @@
       padding: 0 2rem;
       display: flex; align-items: center; justify-content: space-between;
       height: 52px;
+      transition: background .2s;
     }
+    body.light nav { background: rgba(248,248,248,0.9); }
     .nav-brand { font-size: 0.95rem; font-weight: 600; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
     .nav-links { display: flex; gap: 1.5rem; }
     .nav-links a { font-size: 0.8rem; color: #666; text-decoration: none; transition: color .15s; }
     .nav-links a:hover { color: #ccc; }
     .nav-gh { font-size: 0.75rem; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; color: #666; text-decoration: none; transition: all .15s; }
     .nav-gh:hover { border-color: #444; color: #ccc; }
+    .theme-toggle { font-size: 1rem; background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px 6px; line-height: 1; transition: color .15s; }
+    .theme-toggle:hover { color: var(--text); }
 
     /* page */
     .page { max-width: 760px; margin: 0 auto; padding: 0 2rem 8rem; }
@@ -41,7 +66,7 @@
     /* hero section */
     .hero-section { padding: 6rem 0 4rem; text-align: center; }
     .hero-avatars { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2.5rem; }
-    .hero-section h1 { font-size: 2.5rem; font-weight: 700; color: #fff; letter-spacing: -0.04em; margin-bottom: 0.75rem; }
+    .hero-section h1 { font-size: 2.5rem; font-weight: 700; color: var(--text); letter-spacing: -0.04em; margin-bottom: 0.75rem; }
     .hero-section p { font-size: 1rem; color: var(--muted); max-width: 400px; margin: 0 auto 2rem; }
     .hero-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
     .btn-primary { font-size: 0.85rem; padding: 9px 20px; background: #fff; color: #000; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 500; text-decoration: none; transition: opacity .15s; }
@@ -58,7 +83,7 @@
     /* section */
     .section { padding: 3rem 0 0; }
     .section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #555; margin-bottom: 1.5rem; }
-    h2 { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; letter-spacing: -0.02em; }
     p { color: #666; font-size: 0.875rem; margin-bottom: 1rem; }
 
     /* divider */
@@ -125,6 +150,7 @@
     <a href="#api">api</a>
   </div>
   <a class="nav-gh" href="https://github.com/igarren/glowmoji" target="_blank">github ↗</a>
+  <button class="theme-toggle" onclick="toggleTheme()" title="toggle light/dark">◐</button>
 </nav>
 
 <div class="page">
@@ -291,129 +317,88 @@ el.<span class="fn">addEventListener</span>(<span class="str">'click'</span>, ()
 </footer>
 
 <script>
-  // ── avatar engine ────────────────────────────────────────────────────
-  const PALETTES = [
-    { bg: '#050a06', face: '#c2f0a0', glow: '#d8ffb8', dark: '#1a3a08' },
-    { bg: '#05060f', face: '#a0b8f0', glow: '#c0d4ff', dark: '#0a1840' },
-    { bg: '#0f0510', face: '#dda0f0', glow: '#f0c8ff', dark: '#3a0850' },
-    { bg: '#0f0a00', face: '#f0d898', glow: '#fff0b0', dark: '#3a2800' },
-    { bg: '#0f0505', face: '#f0a8a8', glow: '#ffc8ff', dark: '#3a0808' },
-    { bg: '#00080f', face: '#98d8f0', glow: '#b8f0ff', dark: '#00283a' },
-    { bg: '#050f08', face: '#98f0c0', glow: '#b8ffd8', dark: '#003a18' },
-    { bg: '#0a080f', face: '#b8a8f0', glow: '#d4c8ff', dark: '#180838' },
-  ];
-  function hashStr(s) {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-    return Math.abs(h);
-  }
-  function getPalette(name) { return PALETTES[hashStr(name) % PALETTES.length]; }
-  function getInitial(name) { return (name || '?').trim().charAt(0).toUpperCase(); }
-  function lighten(hex, amount) {
-    const n = parseInt(hex.replace('#',''), 16);
-    const r = Math.min(255, Math.round(((n>>16)&0xff) + (255-((n>>16)&0xff))*amount));
-    const g = Math.min(255, Math.round(((n>>8)&0xff)  + (255-((n>>8)&0xff))*amount));
-    const b = Math.min(255, Math.round((n&0xff)        + (255-(n&0xff))*amount));
-    return '#' + ((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);
-  }
-  function superellipsePath(cx, cy, rx, ry, fill) {
-    const k = 0.85, kx = rx*k, ky = ry*k;
-    const d = [`M ${cx} ${cy-ry}`,`C ${cx+kx} ${cy-ry}, ${cx+rx} ${cy-ky}, ${cx+rx} ${cy}`,`C ${cx+rx} ${cy+ky}, ${cx+kx} ${cy+ry}, ${cx} ${cy+ry}`,`C ${cx-kx} ${cy+ry}, ${cx-rx} ${cy+ky}, ${cx-rx} ${cy}`,`C ${cx-rx} ${cy-ky}, ${cx-kx} ${cy-ry}, ${cx} ${cy-ry}`,'Z'].join(' ');
-    return `<path d="${d}" fill="${fill}"/>`;
-  }
-  function faceShape(cx, cy, r, shape, fill) {
-    if (shape === 'circle') return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`;
-    const side = r*2, x = cx-r, y = cy-r;
-    if (shape === 'square') { const rx = r*0.15; return `<rect x="${x}" y="${y}" width="${side}" height="${side}" rx="${rx}" ry="${rx}" fill="${fill}"/>`; }
-    return superellipsePath(cx, cy, r, r, fill);
-  }
-  function makeSvg(name, size, shape, color) {
-    const base = getPalette(name);
-    const p = color ? { ...base, face: color, glow: lighten(color, 0.25) } : base;
-    const h = hashStr(name), init = getInitial(name), uid = Math.random().toString(36).slice(2,8);
-    const s = size, cx = s/2, cy = s/2, faceR = s*0.43;
-    const eyeY = cy-faceR*0.1, eyeGap = faceR*0.32, lx = cx-eyeGap, rx = cx+eyeGap, dotR = faceR*0.1;
-    const fontSize = Math.round(s*0.18), letterY = cy+faceR*0.22;
-    const mouthY = cy+faceR*0.46, mouthW = faceR*0.3, mouthX = cx+((h>>10)%5)-2, mouthH = Math.max(1.5,s*0.02);
-    const outerRx = shape==='circle'?s/2:shape==='rounded'?Math.round(s*0.22):Math.round(s*0.07);
-    const hlAngle = shape==='square'?-15:-30;
-    const glowLayers = [{r:faceR*1.5,o:0.07},{r:faceR*1.25,o:0.10},{r:faceR*1.05,o:0.14},{r:faceR*0.88,o:0.18},{r:faceR*0.7,o:0.15}].map(l=>`<circle cx="${cx}" cy="${cy}" r="${l.r}" fill="${p.glow}" opacity="${l.o}"/>`).join('\n    ');
-    const hlx = cx-faceR*0.25, hly = cy-faceR*0.3;
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" style="display:block;"><defs><radialGradient id="fg_${uid}" cx="36%" cy="30%" r="70%"><stop offset="0%" stop-color="${p.glow}"/><stop offset="40%" stop-color="${p.face}"/><stop offset="100%" stop-color="${p.face}"/></radialGradient><clipPath id="clip_${uid}"><rect width="${s}" height="${s}" rx="${outerRx}" ry="${outerRx}"/></clipPath></defs><g clip-path="url(#clip_${uid})"><rect width="${s}" height="${s}" fill="${p.bg}"/>${glowLayers}${faceShape(cx,cy,faceR,shape,`url(#fg_${uid})`)}<ellipse cx="${hlx}" cy="${hly}" rx="${faceR*0.18}" ry="${faceR*0.1}" fill="white" opacity="0.28" transform="rotate(${hlAngle} ${hlx} ${hly})"/><ellipse id="${uid}_le" cx="${lx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/><ellipse id="${uid}_re" cx="${rx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/><text x="${cx}" y="${letterY}" text-anchor="middle" font-family="monospace" font-size="${fontSize}" font-weight="700" fill="${p.dark}" opacity="0.35" dominant-baseline="central">${init}</text><rect x="${mouthX-mouthW/2}" y="${mouthY}" width="${mouthW}" height="${mouthH}" rx="${mouthH/2}" fill="${p.dark}" opacity="0.6"/></g></svg>`;
-  }
+  const { mount, getBorderRadius } = glowmoji;
 
-  // ── blink ────────────────────────────────────────────────────────────
-  const blinkTimers = {};
-  function animateBlink(uid) {
-    const le = document.getElementById(uid+'_le'), re = document.getElementById(uid+'_re');
-    if (!le||!re) return;
-    const dotR = parseFloat(le.getAttribute('rx')), start = performance.now();
-    function step(now) {
-      const el = now-start; let ry;
-      if (el<70) ry=dotR*(1-el/70); else if (el<110) ry=0; else if (el<220) ry=dotR*((el-110)/110);
-      else { le.setAttribute('ry',dotR); re.setAttribute('ry',dotR); return; }
-      const v=Math.max(0,ry); le.setAttribute('ry',v); re.setAttribute('ry',v);
-      requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-  function startAutoBlink(uid) {
-    if (blinkTimers[uid]) clearTimeout(blinkTimers[uid]);
-    function next() { blinkTimers[uid]=setTimeout(()=>{animateBlink(uid);next();},2000+Math.random()*3500); }
-    blinkTimers[uid]=setTimeout(()=>{animateBlink(uid);next();},500+Math.random()*2000);
-  }
-
-  // ── state ────────────────────────────────────────────────────────────
   let currentShape = 'rounded', useColor = false;
   const NAMES = ['Alice','Bob','Cara','Dev','Eli','Faye','Max','Zara'];
-  function getBorderRadius(shape, s) { return shape==='circle'?s/2+'px':shape==='rounded'?Math.round(s*0.22)+'px':Math.round(s*0.07)+'px'; }
+  const stopFns = [];
+
   function getColor() { return useColor ? document.getElementById('colorInput').value : null; }
   function clearColor() { useColor=false; document.getElementById('colorMode').textContent=''; updateAll(); }
-  function renderAvatar(name, size, shape) {
-    const color=getColor(), svg=makeSvg(name,size,shape,color), br=getBorderRadius(shape,size);
-    const m=svg.match(/id="fg_(\w+)"/), uid=m?m[1]:'';
-    return { html:`<div class="avatar-wrap" style="width:${size}px;height:${size}px;border-radius:${br};" onclick="animateBlink('${uid}')">${svg}</div>`, uid };
-  }
-  function renderGroup(containerId, names, size) {
-    const c=document.getElementById(containerId); c.innerHTML='';
-    names.forEach(n=>{ const {html,uid}=renderAvatar(n,size,currentShape); c.innerHTML+=`<div class="cell">${html}<span class="cell-lbl">${n}</span></div>`; setTimeout(()=>startAutoBlink(uid),100); });
-  }
+
+  document.getElementById('colorInput').addEventListener('input', () => {
+    useColor=true; document.getElementById('colorMode').textContent='custom'; updateAll();
+  });
+
   function setShape(s) {
     currentShape=s;
     document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
     document.getElementById('btn-'+s).classList.add('active');
     updateAll();
   }
-  document.getElementById('colorInput').addEventListener('input', ()=>{ useColor=true; document.getElementById('colorMode').textContent='custom'; updateAll(); });
+
+  function toggleTheme() { document.body.classList.toggle('light'); updateAll(); }
 
   function copy(text, btn) {
     navigator.clipboard.writeText(text).then(()=>{ btn.textContent='copied'; setTimeout(()=>btn.textContent='copy',1500); });
   }
   function copyBlock(btn) {
-    const code = btn.closest('.code-block').querySelector('code').innerText;
-    copy(code, btn);
+    copy(btn.closest('.code-block').querySelector('code').innerText, btn);
+  }
+
+  function renderCell(name, size) {
+    const wrap = document.createElement('div');
+    wrap.className = 'avatar-wrap';
+    wrap.style.cssText = `width:${size}px;height:${size}px;`;
+    const isLight = document.body.classList.contains('light');
+    const stop = mount(wrap, { name, size, shape: currentShape, color: getColor(), transparent: isLight });
+    stopFns.push(stop);
+    return wrap;
   }
 
   function updateAll() {
+    stopFns.splice(0).forEach(s => s());
     const custom = document.getElementById('nameInput').value.trim() || 'igarren';
 
     // nav avatar
-    const {html:navHtml,uid:navUid}=renderAvatar(custom,24,'rounded');
-    document.getElementById('navAvatar').innerHTML=navHtml;
-    setTimeout(()=>startAutoBlink(navUid),100);
+    const navEl = document.getElementById('navAvatar');
+    navEl.innerHTML = '';
+    navEl.appendChild(renderCell(custom, 24));
 
-    // hero avatars — show a few names at 72px
-    const heroNames=[custom,...NAMES.filter(n=>n.toLowerCase()!==custom.toLowerCase()).slice(0,4)];
-    document.getElementById('heroAvatars').innerHTML='';
-    heroNames.forEach(n=>{ const {html,uid}=renderAvatar(n,72,currentShape); document.getElementById('heroAvatars').innerHTML+=html; setTimeout(()=>startAutoBlink(uid),100); });
+    // hero avatars
+    const heroEl = document.getElementById('heroAvatars');
+    heroEl.innerHTML = '';
+    const heroNames = [custom, ...NAMES.filter(n=>n.toLowerCase()!==custom.toLowerCase()).slice(0,4)];
+    heroNames.forEach(n => heroEl.appendChild(renderCell(n, 72)));
 
     // sizes
-    const sc=document.getElementById('sizeGrid'); sc.innerHTML='';
-    [24,32,48,64,80,96].forEach(sz=>{ const {html,uid}=renderAvatar(custom,sz,currentShape); sc.innerHTML+=`<div class="cell">${html}<span class="cell-lbl">${sz}px</span></div>`; setTimeout(()=>startAutoBlink(uid),100); });
+    const sc = document.getElementById('sizeGrid');
+    sc.innerHTML = '';
+    [24,32,48,64,80,96].forEach(sz => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const lbl = document.createElement('span');
+      lbl.className = 'cell-lbl';
+      lbl.textContent = sz+'px';
+      cell.appendChild(renderCell(custom, sz));
+      cell.appendChild(lbl);
+      sc.appendChild(cell);
+    });
 
     // name grid
-    const names=[custom,...NAMES.filter(n=>n.toLowerCase()!==custom.toLowerCase()).slice(0,7)];
-    renderGroup('avatarGrid',names,64);
+    const ag = document.getElementById('avatarGrid');
+    ag.innerHTML = '';
+    const names = [custom, ...NAMES.filter(n=>n.toLowerCase()!==custom.toLowerCase()).slice(0,7)];
+    names.forEach(n => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const lbl = document.createElement('span');
+      lbl.className = 'cell-lbl';
+      lbl.textContent = n;
+      cell.appendChild(renderCell(n, 64));
+      cell.appendChild(lbl);
+      ag.appendChild(cell);
+    });
   }
 
   updateAll();

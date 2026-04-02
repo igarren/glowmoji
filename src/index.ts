@@ -283,7 +283,7 @@ export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
     : base;
   const h = hashStr(name);
   const init = escapeXml(getInitial(name));
-  const uid = ((h >>> 0) % 0xffffff).toString(36);
+  const uid = ((h >>> 0) % 0xffffff).toString(36) + Math.random().toString(36).slice(2, 6);
 
   const cx = s / 2;
   const cy = s / 2;
@@ -328,8 +328,8 @@ export function glowmoji(options: GlowmojiOptions): GlowmojiResult {
     ${glowLayers(cx, cy, faceR, shape, p.glow, uid)}
     ${faceShape(cx, cy, faceR, shape, `url(#fg_${uid})`, uid)}
     ${specularHighlight(cx, cy, faceR, shape)}
-    <ellipse cx="${lx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/>
-    <ellipse cx="${rx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/>
+    <ellipse id="${uid}_le" cx="${lx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/>
+    <ellipse id="${uid}_re" cx="${rx}" cy="${eyeY}" rx="${dotR}" ry="${dotR}" fill="${p.dark}"/>
     <text x="${cx}" y="${letterY}" text-anchor="middle" font-family="monospace" font-size="${fontSize}" font-weight="700" fill="${p.dark}" opacity="0.35" dominant-baseline="central">${init}</text>
     <rect x="${mouthX - mouthW / 2}" y="${mouthY}" width="${mouthW}" height="${mouthH}" rx="${mouthH / 2}" fill="${p.dark}" opacity="0.6"/>
   </g>

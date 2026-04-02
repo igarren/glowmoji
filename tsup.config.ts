@@ -18,7 +18,7 @@ export default defineConfig([
     outExtension: () => ({ js: '.global.js' }),
     format: ['iife'],
     globalName: '_glowmoji',
-    footer: { js: 'window.glowmoji=_glowmoji.glowmoji;' },
+    footer: { js: 'window.glowmoji=_glowmoji.glowmoji;window.glowmoji.mount=_glowmoji.mount;window.glowmoji.blink=_glowmoji.blink;window.glowmoji.autoBlink=_glowmoji.autoBlink;window.glowmoji.getBorderRadius=_glowmoji.getBorderRadius;' },
     minify: true,
     dts: false,
   },
